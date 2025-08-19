@@ -4,10 +4,12 @@ const asyncHandler = (requestHandler) => {
     }
 }
 
+//this file is mainly created so that we don't
+//have to write try catch again and again 
+// if a error happens we can directly catch it here
 
 
-
-
+export {asyncHandler}
 
 // const asyncHandler = () => {}
 // const asyncHandler = (func) => () => {}
