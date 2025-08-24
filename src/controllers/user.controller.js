@@ -269,7 +269,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
     return res
     .status(200)
-    .json(200, req.user, "Current user fetched Successfully")
+    .json(new ApiResponse(200, req.user, "Current user fetched Successfully"))
 })
 
 const updateCurrentUser = asyncHandler(async (req, res) => {
@@ -279,7 +279,7 @@ const updateCurrentUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All field are Required")
     }
 
-    const user = User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
