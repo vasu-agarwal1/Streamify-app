@@ -10,7 +10,7 @@ const createTweet = asyncHandler(async (req, res) => {
     const {content} = req.body
 
     if (!content) {
-        throw new ApiError(400,"Type you tweet")
+        throw new ApiError(400,"Type your tweet")
     }
 
     const owner = await User.findById(req.user?._id)
@@ -38,6 +38,20 @@ const createTweet = asyncHandler(async (req, res) => {
 
 const getUserTweets = asyncHandler(async (req, res) => {
     // TODO: get user tweets
+    const user = req.user
+
+    const tweet = await Tweet.find(
+        {
+            owner: user?._id
+        }
+    )
+    if (!tweet) {
+        throw new ApiError(400, "Error while fetching tweets by user")
+    }
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, tweet, "All tweets fetched successfully"))
 })
 
 const updateTweet = asyncHandler(async (req, res) => {
