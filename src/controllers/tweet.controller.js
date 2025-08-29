@@ -56,6 +56,40 @@ const getUserTweets = asyncHandler(async (req, res) => {
 
 const updateTweet = asyncHandler(async (req, res) => {
     //TODO: update tweet
+    const{content} = req.body
+
+    const user = req.user?._id
+
+    if (!content) {
+        throw new ApiError(400,"Give the content!!")
+    }
+
+    const currTweet = req?.params.tweetId
+
+    // if (user.toString() !== currTweet.owner.toString()) {
+    //     throw new ApiError(400,"Unauthorized Request")
+    // }
+
+    const tweet = await Tweet.findOneAndUpdate(
+        {// compares both the fields
+            _id : currTweet,
+            owner : user
+        },
+        {// updating the tweet
+            $set: {
+                content
+            }
+        },
+        { new : true }
+    )
+
+    if (!tweet) {
+        throw new ApiError(400,"Error while fetching tweet from DB")
+    }
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, tweet, "tweet is updated"))
 })
 
 const deleteTweet = asyncHandler(async (req, res) => {
