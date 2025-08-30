@@ -119,6 +119,25 @@ return res.status(200)
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: delete video
+
+    if (!videoId) {
+        throw new ApiError(400, "No tweet Exists")
+    }
+
+    const video = await Video.findOneAndDelete(
+        {
+            _id: videoId,
+            owner: req.user?._id
+        }
+    )
+    
+     if (!video) {
+        throw new ApiError(404, "unauthorized access or Error while deleting in database")
+    }
+
+     return res
+    .status(200)
+    .json(new ApiResponse(200,{}, "Video Successfully Deleted"))
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
