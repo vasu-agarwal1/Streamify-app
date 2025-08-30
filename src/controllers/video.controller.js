@@ -70,8 +70,51 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
+    const{title, description} = req.body
+
+    const updateFields = {}//created an empty object to store on fields which are updated
+
+     if (title) {
+        updateFields.title = title
+     }
+     if (description) {
+        updateFields.description = description
+     }
+
+    
+
+    if (req.file) {
+        const thumbnailLocalPath = req.file.path  
+        const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+
+        if (!thumbnail) {
+            throw new ApiError(400, "Error while uploading on cloudinary")
+        }
+
+        updateFields.thumbnail = thumbnail?.url
+    }
+
+    
+
+    const video = await Video.findOneAndUpdate({
+        _id : videoId,
+        owner : req.user?._id
+    },
+    {
+        $set: updateFields
+    },
+    {new: true}
+)
+
+if (!video) {
+        throw new ApiError(404,"Error while fetching video from DB")
+    }
+
+return res.status(200)
+.json(new ApiResponse(200,video, "Data Updated Successfully!!"))
 
 })
+
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
