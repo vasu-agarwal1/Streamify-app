@@ -32,7 +32,7 @@ const createTweet = asyncHandler(async (req, res) => {
 
     return res
     .status(200)
-    .json(new ApiResponse(200, createdTweet, "New tweet created successfully"))
+    .json(new ApiResponse(200, tweet, "New tweet created successfully"))
 })
 
 const getUserTweets = asyncHandler(async (req, res) => {
