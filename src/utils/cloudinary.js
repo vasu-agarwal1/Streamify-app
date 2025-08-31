@@ -30,4 +30,27 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 }
 
-export {uploadOnCloudinary}
+const deleteFromCloudinary = async (cloudinaryUrl, resourceType) => {
+    try {
+        if (!cloudinaryUrl) {
+            console.log("No Cloudinary URL provided.");
+            return null;
+        }
+        
+        const publicId = cloudinaryUrl.split('/').pop().split('.')[0];
+
+        // 2. Call Cloudinary's destroy method
+        const result = await cloudinary.uploader.destroy(publicId, {
+            resource_type: resourceType  // This will be 'video' or 'image'
+        });
+        
+        console.log("Asset deletion result from Cloudinary:", result);
+        return result;
+
+    } catch (error) {
+        console.error("Error deleting asset from Cloudinary:", error);
+        return null; // Return null on failure
+    }
+}
+
+export {uploadOnCloudinary, deleteFromCloudinary}
