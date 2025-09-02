@@ -1,3 +1,4 @@
+import mongoose from "mongoose"
 import { Video } from "../models/video.model.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
@@ -162,6 +163,53 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
+    const pipeline = []
+
+    if(userId){//filter by user
+        pipeline.push({
+            $match: {
+                owner: new mongoose.Types.ObjectId(userId)
+            }
+        })
+    }
+
+        
+   if(query){// filter by text search
+    pipeline.push({
+        $match: {
+            $or: [
+                {"title":{$regex: query , $options: 'i'}},
+                {"description":{$regex: query , $options: 'i'}}
+            ]
+        }
+    })
+   }
+
+   if (sortBy) {
+    const sortOrder = sortType === 'desc' ? -1: 1 // sortType tells either desc or asc
+    pipeline.push({
+        $sort: {
+            [sortBy]: sortOrder //in modern js this [] braket will put exact value of sortBy eg. views
+        }
+    })
+   }
+
+   const options = {
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10)
+   }
+
+   const video = await Video.aggregatePaginate(pipeline, options)
+
+   return res
+   .status(200)
+   .json(
+    new ApiResponse(
+        200,
+        video,
+        "video founded successfully"
+    )
+   )
 })
 
 export {
