@@ -9,6 +9,9 @@ import { json } from "express"
 
 const toggleSubscription = asyncHandler(async (req, res) => {
     const {channelId} = req.params
+    if(!channelId){
+        throw new ApiError(404,"channelId is needed")
+    }
     // TODO: toggle subscription
     const subscriberId = req.user._id
 
@@ -41,6 +44,9 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     const {channelId} = req.params
+    if(!channelId){
+        throw new ApiError(404,"channelId is needed")
+    }
 
     const subs = await Subscription.aggregate([
         {
