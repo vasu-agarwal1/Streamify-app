@@ -4,6 +4,7 @@ import { Subscription } from "../models/subscription.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
+import { json } from "express"
 
 
 const toggleSubscription = asyncHandler(async (req, res) => {
@@ -40,6 +41,41 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     const {channelId} = req.params
+
+    const subs = await Subscription.aggregate([
+        {
+            $match: {
+                channel: new mongoose.Types.ObjectId(channelId)
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "subscriber",
+                foreignField: "_id",
+                as: "subscriberDetails"
+            }
+        },
+        {
+            $replaceRoot: {
+                newRoot: { $first: "$subscriberDetails" }
+            }
+        },
+        {
+            $project: {
+                username: 1,
+                fullName: 1,
+                avatar: 1
+            }
+        }
+    ])
+    return res 
+    .status(200)
+    .json(new ApiResponse(
+        200,
+        subs,
+        "All subscribers fetched successfully"
+    ))
 })
 
 // controller to return channel list to which user has subscribed
