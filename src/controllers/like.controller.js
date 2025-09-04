@@ -156,7 +156,7 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         {
             $match: {
                 likedBy: new mongoose.Types.ObjectId(userId),
-                video: { $exists: true }
+                video: { $exists: true }//filters out tweet and comments liked and gives only liked video
             }
         },
         {
