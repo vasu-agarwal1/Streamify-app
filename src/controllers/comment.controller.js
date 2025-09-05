@@ -9,6 +9,61 @@ const getVideoComments = asyncHandler(async (req, res) => {
     const {videoId} = req.params
     const {page = 1, limit = 10} = req.query
 
+    const pipeline = [
+        {
+            $match: {
+                video: new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        {
+            $lookup : {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+            }
+        },
+        {
+            // Stage 3: "Promote" the owner's details. $first gets the single user object from the array.
+            $addFields: {
+                owner: {
+                    $first: "$ownerDetails"
+                }
+            }
+        },
+        
+        {
+            $project: {
+                content: 1,
+                createdAt: 1,
+                "owner.username" : 1,
+                "owner.avatar" : 1,
+                "owner._id" : 1
+            }
+        }
+    ]
+
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10)
+    }
+
+    const getAllComments = await Comment.aggregatePaginate(pipeline, options)
+
+
+    if (!getAllComments) {
+        throw new ApiError(500, "Failed to fetch comments");
+    }
+
+    return res
+    .status(200)
+    .json(new 
+        ApiResponse(
+            200,
+          getAllComments,
+          "All the comments fetched Successfully"
+    ))
+
 })
 
 const addComment = asyncHandler(async (req, res) => {
