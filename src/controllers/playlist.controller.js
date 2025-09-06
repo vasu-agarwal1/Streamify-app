@@ -188,12 +188,68 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
 const deletePlaylist = asyncHandler(async (req, res) => {
     const {playlistId} = req.params
     // TODO: delete playlist
+    if (!playlistId) {
+        throw new ApiError(400, "playlistId is required")
+    }
+
+    const playlist = await Playlist.findOneAndDelete({
+        _id: playlistId,
+        owner: req.user?._id
+    })
+
+    if (!playlist ) {
+        throw new ApiError(404, "Playlist not deleted from DB");
+    }
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200,{},"deleted the playlist"))
 })
 
 const updatePlaylist = asyncHandler(async (req, res) => {
     const {playlistId} = req.params
     const {name, description} = req.body
     //TODO: update playlist
+
+     const updateFields = {};
+
+    // 2. Dynamically populate the object
+    if (name && name.trim() !== "") {
+        updateFields.name = name;
+    }
+    if (description) { // Description is optional, so we just check if it was provided
+        updateFields.description = description;
+    }
+
+     if (Object.keys(updateFields).length === 0) {
+        throw new ApiError(400, "No fields to update were provided.");
+    }
+
+    const updatedPlaylist = await Playlist.findOneAndUpdate(
+        {
+            _id: playlistId,
+            owner: req.user?._id
+        },
+        {
+            $set: updateFields
+        },
+        {new: true}
+    )
+
+    if(!updatedPlaylist){
+        throw new ApiError(500,"Error in Updating playlis")
+    }
+
+     return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            updatedPlaylist,
+            "Successfully editsd playlist"
+        )
+    )
+
 })
 
 export {
