@@ -3,6 +3,7 @@ import {Playlist} from "../models/playlist.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
+import { Video } from "../models/video.model.js"
 
 
 const createPlaylist = asyncHandler(async (req, res) => {
@@ -101,11 +102,86 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
     const {playlistId, videoId} = req.params
+
+    if(!isValidObjectId(playlistId) || !isValidObjectId(videoId)){
+        throw new ApiError(404,"invalid playlist or video Id")
+    }
+
+    const playlist = await Playlist.findOne({
+        _id: playlistId,
+        owner: req.user?._id
+    })
+    if (!playlist) {
+        throw new ApiError(400,"Unauthorized request")
+    }
+
+    const video = await Video.findById(videoId)
+    if (!video) {
+        throw new ApiError(404,"video don't exist")
+    }
+
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(    
+         playlistId,
+        {
+            $addToSet:{
+                videos: videoId
+            }
+        },
+        {new: true}
+    )
+    if(!updatedPlaylist){
+        throw new ApiError(403,"Error in updating playlist")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            updatedPlaylist,
+            "videos successfully added to playlist"
+        )
+    )
 })
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     const {playlistId, videoId} = req.params
     // TODO: remove video from playlist
+
+     if(!isValidObjectId(playlistId) || !isValidObjectId(videoId)){
+        throw new ApiError(404,"invalid playlist or video Id")
+    }
+
+    const playlist = await Playlist.findOne({
+        _id: playlistId,
+        owner: req.user?._id
+    })
+    if (!playlist) {
+        throw new ApiError(400,"Unauthorized request")
+    }
+
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(
+        playlistId,
+        {
+            $pull: {
+                videos: videoId
+            }
+        },
+        {new: true}
+    )
+
+    if(!updatedPlaylist){
+        throw new ApiError(500,"Error in deleting video")
+    }
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            updatedPlaylist,
+            "videos successfully deleted from playlist"
+        )
+    )
 
 })
 
