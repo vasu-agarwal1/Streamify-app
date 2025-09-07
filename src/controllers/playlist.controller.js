@@ -246,7 +246,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
         new ApiResponse(
             200,
             updatedPlaylist,
-            "Successfully editsd playlist"
+            "Successfully edited playlist"
         )
     )
 
