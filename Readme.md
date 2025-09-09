@@ -1,6 +1,6 @@
 # Streamify Backend 
 
-A **production-ready backend** for a social media platform that combines features of **YouTube (videos, subscriptions, likes, comments)** and **Twitter (tweet-like short posts)**.  
+A **production-ready backend** for a social media platform that combines features of **YouTube (videos, subscriptions, likes, comments, playlist)** and **Twitter (tweet-like short posts)**.  
 Built with **Node.js, Express, MongoDB, and Cloudinary**, this project demonstrates scalable backend architecture, secure authentication, and advanced aggregation pipelines.
 
 ---
