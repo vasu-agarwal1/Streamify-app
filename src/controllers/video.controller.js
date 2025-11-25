@@ -55,7 +55,37 @@ const getVideoById = asyncHandler(async (req, res) => {
         throw new ApiError(400, "please provide video id")
     }
 
-    const video = await Video.findById(videoId)
+    const videoAggregate = await Video.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            fullName: 1,
+                            username: 1,
+                            avatar: 1,
+                            // We can add subscribersCount here later!
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            // The lookup returns an array, so we take the first item
+            $unwind: "$owner"
+        }
+    ])
+
+    const video = videoAggregate[0]; // Get the single object
 
     if(!video){
         throw new ApiError(404,"video not present in DB")
@@ -184,6 +214,28 @@ const getAllVideos = asyncHandler(async (req, res) => {
         }
     })
    }
+   pipeline.push({
+        $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "owner",
+            pipeline: [
+                {
+                    $project: {
+                        fullName: 1,
+                        username: 1,
+                        avatar: 1
+                    }
+                }
+            ]
+        }
+    })
+
+    // $lookup returns an array, so we fetch the first item
+    pipeline.push({
+        $unwind: "$owner"
+    })
 
    if (sortBy) {
     const sortOrder = sortType === 'desc' ? -1: 1 // sortType tells either desc or asc
