@@ -146,51 +146,88 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 )
 
 const getLikedVideos = asyncHandler(async (req, res) => {
-    //TODO: get all liked videos
-    const userId = req.user?._id
-    if(!userId){
-        throw new ApiError(404, "user is not logged in")
+    const userId = req.user?._id;
+    
+    if (!userId) {
+        throw new ApiError(404, "User is not logged in");
     }
 
     const likedVideos = await Like.aggregate([
+        // 1. Find likes by this user
         {
             $match: {
                 likedBy: new mongoose.Types.ObjectId(userId),
-                video: { $exists: true }//filters out tweet and comments liked and gives only liked video
             }
         },
+        // 2. Fetch the Video
         {
             $lookup: {
                 from: "videos",
                 localField: "video",
                 foreignField: "_id",
-                as: "videoDetail"
+                as: "likedVideo"
+            }
+        },
+        // 3. Unwind (BUT keep the like even if video is missing, for debugging)
+        {
+            $unwind: {
+                path: "$likedVideo",
+                preserveNullAndEmptyArrays: false // Set true if you want to see broken likes
+            }
+        },
+        // 4. Make the Video the "Root" document
+        // Now the document structure looks exactly like the Home Feed!
+        {
+            $replaceRoot: { newRoot: "$likedVideo" }
+        },
+        // 5. Fetch the Owner (Standard Feed Logic)
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            fullName: 1,
+                            username: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
             }
         },
         {
-            $replaceRoot: {
-                newRoot: {$first: "$videoDetail"}
-            }
+            $unwind: "$owner"
         },
+        // 6. Project specific fields for the Card
         {
             $project: {
-                title: 1,
+                _id: 1,
                 videoFile: 1,
                 thumbnail: 1,
-                description: 1 
+                title: 1,
+                description: 1,
+                views: 1,
+                duration: 1,
+                createdAt: 1,
+                isPublished: 1,
+                owner: 1
             }
         }
-    ])
+    ]);
+
     return res
-    .status(200)
-    .json(
-        new ApiResponse(
-            200,
-            likedVideos,
-            "these are all the videos liked by you"
-        )
-    )
-})
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                likedVideos,
+                "Liked videos fetched successfully"
+            )
+        );
+});
 
 export {
     toggleCommentLike,

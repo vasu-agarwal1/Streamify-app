@@ -63,6 +63,14 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
+                from: "likes",  
+                localField: "_id",
+                foreignField: "video",
+                as: "likes"
+            }
+        },
+        {
+            $lookup: {
                 from: "users",
                 localField: "owner",
                 foreignField: "_id",
@@ -80,8 +88,22 @@ const getVideoById = asyncHandler(async (req, res) => {
             }
         },
         {
-            // The lookup returns an array, so we take the first item
-            $unwind: "$owner"
+            $addFields: {
+                likesCount: { $size: "$likes" },
+                owner: { $first: "$owner" }, // Since lookup returns an array
+                isLiked : {
+                    $cond: {
+                        if : { $in: [req.user?._id, "$likes.likedBy"] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                likes: 0
+            }
         }
     ])
 
