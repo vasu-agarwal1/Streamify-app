@@ -375,7 +375,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) =>
         },
         {
             $lookup: {
-                from: "subscription",
+                from: "subscriptions",
                 localField: "_id",
                 foreignField: "channel",
                 as: "subscribers"
@@ -383,7 +383,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) =>
         },
         {
             $lookup: {
-                from: "subscription",
+                from: "subscriptions",
                 localField: "_id",
                 foreignField: "subscriber",
                 as: "subscribedTo"
@@ -392,10 +392,10 @@ const getUserChannelProfile = asyncHandler(async (req, res) =>
         {//adding both fields to initial db
             $addFields: {
                 subscribersCount: {
-                    $size: "$subscibers"
+                    $size: "$subscribers"
                 },
                 channelsSubscribed: {
-                    $size: "$subscibedTo"
+                    $size: "$subscribedTo"
                 },
                 isSubscribed: {
                     $cond: {
@@ -424,7 +424,6 @@ const getUserChannelProfile = asyncHandler(async (req, res) =>
         throw new ApiError(404, "channel does not exist")
      }
 
-     console.log(channel);
 
      return res
      .status(200)
