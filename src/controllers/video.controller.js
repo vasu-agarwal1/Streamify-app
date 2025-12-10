@@ -9,6 +9,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js"
 
 
 
+
 const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description} = req.body
     // TODO: get video, upload to cloudinary, create video
@@ -49,11 +50,14 @@ const publishAVideo = asyncHandler(async (req, res) => {
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-    //TODO: get video by id
+    const { videoId } = req.params;
+    
+
     if (!videoId) {
-        throw new ApiError(400, "please provide video id")
+        throw new ApiError(400, "Please provide video id");
     }
+
+    const userId = req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : null;
 
     const videoAggregate = await Video.aggregate([
         {
@@ -63,7 +67,16 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "likes",  
+                from: "subscriptions",
+                localField: "owner", 
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        
+        {
+            $lookup: {
+                from: "likes",
                 localField: "_id",
                 foreignField: "video",
                 as: "likes"
@@ -81,7 +94,6 @@ const getVideoById = asyncHandler(async (req, res) => {
                             fullName: 1,
                             username: 1,
                             avatar: 1,
-                            // We can add subscribersCount here later!
                         }
                     }
                 ]
@@ -90,32 +102,41 @@ const getVideoById = asyncHandler(async (req, res) => {
         {
             $addFields: {
                 likesCount: { $size: "$likes" },
-                owner: { $first: "$owner" }, // Since lookup returns an array
-                isLiked : {
+                owner: { $first: "$owner" },
+                isLiked: {
                     $cond: {
-                        if : { $in: [req.user?._id, "$likes.likedBy"] },
+                        if: { $in: [userId, "$likes.likedBy"] },
                         then: true,
                         else: false
                     }
-                }
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: { $in: [userId, "$subscribers.subscriber"] },
+                        then: true,
+                        else: false
+                    }
+                },
+               
             }
         },
         {
             $project: {
-                likes: 0
+                likes: 0,
+                subscribers: 0 
             }
         }
-    ])
+    ]);
 
-    const video = videoAggregate[0]; // Get the single object
+    const video = videoAggregate[0];
 
-    if(!video){
-        throw new ApiError(404,"video not present in DB")
+    if (!video) {
+        throw new ApiError(404, "Video not found");
     }
 
     return res.status(200)
-    .json(new ApiResponse(200,video, "This is video from DB"))
-})
+        .json(new ApiResponse(200, video, "Video fetched successfully"));
+});
 
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
@@ -254,7 +275,6 @@ const getAllVideos = asyncHandler(async (req, res) => {
         }
     })
 
-    // $lookup returns an array, so we fetch the first item
     pipeline.push({
         $unwind: "$owner"
     })
