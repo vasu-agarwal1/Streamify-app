@@ -3,6 +3,7 @@ import { User } from "../models/user.model.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
+import mongoose from "mongoose"
 
 
 const createTweet = asyncHandler(async (req, res) => {
@@ -111,9 +112,78 @@ const deleteTweet = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Tweet Successfully Deleted"))
 })
 
+
+const getAllTweets = asyncHandler(async (req, res) => {
+    const currentUserId = req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : null;
+
+    const tweets = await Tweet.aggregate([
+        {
+            $sort: {
+                createdAt: -1 
+            }
+        },
+        
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: "$ownerDetails"
+        },
+    
+        {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "tweet",
+                as: "likes"
+            }
+        },
+    
+        {
+            $addFields: {
+                likesCount: { $size: "$likes" },
+                isLiked: {
+                    $cond: {
+                        if: { $in: [currentUserId, "$likes.likedBy"] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        
+        {
+            $project: {
+                likes: 0
+            }
+        }
+    ]);
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, tweets, "Tweets fetched successfully"));
+});
+
+
+
 export {
     createTweet,
     getUserTweets,
     updateTweet,
-    deleteTweet
+    deleteTweet,
+    getAllTweets
 }
