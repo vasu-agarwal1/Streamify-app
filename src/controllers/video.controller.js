@@ -4,6 +4,7 @@ import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { User } from "../models/user.model.js"
 
 
 
@@ -57,7 +58,25 @@ const getVideoById = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Please provide video id");
     }
 
+   
+
     const userId = req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : null;
+
+    if(userId){
+        const user = await User.findById(userId)
+
+        const isAlreadyWatched = user.watchHistory.includes(videoId)
+
+        if(!isAlreadyWatched){
+            await Video.findByIdAndUpdate(videoId, {
+                $inc: { views: 1 }
+            })
+
+            await User.findByIdAndUpdate(userId, {
+                $push: { watchHistory: videoId }
+            })
+        }
+    }
 
     const videoAggregate = await Video.aggregate([
         {
