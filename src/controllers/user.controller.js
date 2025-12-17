@@ -5,6 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import { Subscription } from "../models/subscription.model.js";
+import mongoose from "mongoose";
 
 
 //we have created a method to generate tokens so that we do not have to do it again and again
@@ -436,7 +437,7 @@ const getWatchHistory = asyncHandler(async(req, res) => {
     const user = await User.aggregate([
         {
             $match: {
-                _id: new mongoose.Types.ObjectId(req.user._id)//because in aggregation pipeline mongoose does not waork so we have to manually pass the mongoose function
+                _id: new mongoose.Types.ObjectId(req.user._id)
             }
         },
         {
@@ -475,15 +476,18 @@ const getWatchHistory = asyncHandler(async(req, res) => {
         }
     ])
 
+    const historyData = user[0]?.watchHistory ? user[0].watchHistory.map(video => ({...video})) : [];
+
     return res 
     .status(200)
     .json(
         new ApiResponse(
             200,
-            user[0].WatchHistory || [],
+            historyData,
             "Watch history fetched successfully"
         )
     )
+    
 })
 
 
