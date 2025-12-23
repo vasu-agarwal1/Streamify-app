@@ -13,19 +13,21 @@ const getChannelStats = asyncHandler(async (req, res) => {
 
     const totalVideos = await Video.countDocuments({owner: req.user?._id})
 
-    const videoStats = await Video.aggregate([
+  const videoStats = await Video.aggregate([
         {
-            $match:{
+            $match: {
                 owner: new mongoose.Types.ObjectId(req.user?._id)
             }
         },
         {
-            $group:{
+            $group: {
                 _id: null,
-                totalViews : {$sum : "$views"}
+                totalViews: {
+                    $sum: { $toInt: "$views" } // <--- THE FIX: Force conversion to Number
+                }
             }
         }
-    ]) 
+    ]);
 
     const totalViews = videoStats.length > 0 ? videoStats[0].totalViews : 0
 
@@ -74,7 +76,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
 const getChannelVideos = asyncHandler(async (req, res) => {
     // TODO: Get all the videos uploaded by the channel
     const { page = 1, limit = 10, } = req.query
-    const { userId } = req.params
+    const  userId  = req.user._id
 
     if(!isValidObjectId(userId)){
         throw new ApiError(401,"invalid userId")
