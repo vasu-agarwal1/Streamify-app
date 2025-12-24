@@ -4,10 +4,11 @@ import { createTweet, deleteTweet, getAllTweets, getUserTweets, updateTweet } fr
 
 
 const router = Router()
+router.route("/").get(getAllTweets)
 
 router.use(verifyJWT)
 
-router.route("/").post(createTweet).get(getAllTweets);
+router.route("/").post(createTweet)
 router.route("/user/:userId").get(getUserTweets);
 router.route("/:tweetId").patch(updateTweet).delete(deleteTweet)
 
