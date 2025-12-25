@@ -29,5 +29,28 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
         throw new ApiError(401, error?.message || "Invalid access token")
     }
 
+    
+
 
 })
+
+export const getUserFromTokenOrGuest = asyncHandler(async (req, _, next) => {
+    try {
+        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+        
+        // If no token, just move on (Guest Mode)
+        if (!token) {
+            return next();
+        }
+
+        // If token exists, verify it
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
+        
+        req.user = user; // Attach user to request
+        next();
+    } catch (error) {
+        // If token is invalid (expired), ignore it and treat as guest
+        next();
+    }
+});
