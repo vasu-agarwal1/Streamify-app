@@ -3,6 +3,7 @@ import cors from "cors"
 import cookieParser from "cookie-parser"
 
 const app = express()
+app.set("trust proxy", 1)
 
 app.use(cors({
     origin: process.env.CORS_ORIGIN === "*" ? "http://localhost:3000" : process.env.CORS_ORIGIN,
